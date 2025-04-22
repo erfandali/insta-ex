@@ -13,7 +13,7 @@ class SearchScreen extends StatefulWidget {
 Map<String, VideoPlayerController>? videoControllers;
 class _SearchScreenState extends State<SearchScreen> {
   final List<Map<String, dynamic>> rawPosts = [
-    {'type': 'video', 'url': 'https://videos.pexels.com/video-files/31246288/13345568_1080_1920_24fps.mp4', 'isTall': true},
+    {'type': 'video', 'url': 'https://v.ftcdn.net/11/21/46/21/240_F_1121462188_3P2cGXzNE4ZLKOvrYaB2MZAGHXXhycP2_ST.mp4', 'isTall': true},
     {'type': 'image', 'url': 'https://picsum.photos/204'},
     {'type': 'image', 'url': 'https://picsum.photos/204'},
     {'type': 'image', 'url': 'https://picsum.photos/204'},
@@ -35,6 +35,10 @@ class _SearchScreenState extends State<SearchScreen> {
         {'type': 'image', 'url': 'https://picsum.photos/204'},
            {'type': 'image', 'url': 'https://picsum.photos/204'},
     {'type': 'image', 'url': 'https://picsum.photos/204'},
+    {'type': 'image', 'url': 'https://picsum.photos/204'},
+    {'type': 'image', 'url': 'https://picsum.photos/204'},
+    {'type': 'video', 'url': 'https://v.ftcdn.net/11/21/46/21/240_F_1121462188_3P2cGXzNE4ZLKOvrYaB2MZAGHXXhycP2_ST.mp4', 'isTall':true},
+        {'type': 'image', 'url': 'https://picsum.photos/204'},
     {'type': 'image', 'url': 'https://picsum.photos/204'},
     {'type': 'image', 'url': 'https://picsum.photos/204'},
     {'type': 'video', 'url': 'https://v.ftcdn.net/11/21/46/21/240_F_1121462188_3P2cGXzNE4ZLKOvrYaB2MZAGHXXhycP2_ST.mp4', 'isTall':true},

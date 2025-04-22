@@ -3,7 +3,7 @@ import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:math';
-
+//uup
 class TallVideo extends StatefulWidget {
   const TallVideo({Key? key, required this.post, required this.onVisible})
       : super(key: key);
@@ -19,6 +19,10 @@ class _TallVideoState extends State<TallVideo> {
   late VideoPlayerController controller;
   bool showShimmer = true;
   late final String uniqueId;
+
+  // مدیریت همزمان فقط دو ویدیو بلند
+  static final List<String> _activeIds = [];
+  static final Map<String, VideoPlayerController> _activeControllers = {};
 
   @override
   void initState() {
@@ -45,13 +49,36 @@ class _TallVideoState extends State<TallVideo> {
 
   @override
   void dispose() {
+    _activeControllers.remove(uniqueId);
+    _activeIds.remove(uniqueId);
     controller.dispose();
     super.dispose();
   }
 
   void _handleVisibilityChanged(VisibilityInfo info) {
     if (info.visibleFraction >= 0.6) {
-      widget.onVisible(uniqueId, controller); // اعلام کن که من باید پخش شم
+      // اضافه کردن فقط در صورت نبود در لیست فعال‌ها
+      if (!_activeIds.contains(uniqueId)) {
+        _activeIds.add(uniqueId);
+        _activeControllers[uniqueId] = controller;
+
+        // اگر بیش از ۲ ویدیو فعال بودن، قدیمی‌ترین رو استپ کن
+        while (_activeIds.length > 3) {
+          String removedId = _activeIds.removeAt(0);
+          _activeControllers[removedId]?.pause();
+          _activeControllers.remove(removedId);
+        }
+      }
+
+      controller.play();
+      widget.onVisible(uniqueId, controller);
+    } else {
+      // اگر ویدیو از دید خارج شد، متوقفش کن
+      if (_activeIds.contains(uniqueId)) {
+        controller.pause();
+        _activeIds.remove(uniqueId);
+        _activeControllers.remove(uniqueId);
+      }
     }
   }
 
