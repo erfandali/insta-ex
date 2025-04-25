@@ -13,6 +13,7 @@ class SearchScreen extends StatefulWidget {
 Map<String, VideoPlayerController>? videoControllers;
 class _SearchScreenState extends State<SearchScreen> {
   final List<Map<String, dynamic>> rawPosts = [
+    //uuu- uptad
     {'type': 'video', 'url': 'https://v.ftcdn.net/11/21/46/21/240_F_1121462188_3P2cGXzNE4ZLKOvrYaB2MZAGHXXhycP2_ST.mp4', 'isTall': true},
     {'type': 'image', 'url': 'https://picsum.photos/204'},
     {'type': 'image', 'url': 'https://picsum.photos/204'},
@@ -127,29 +128,7 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     }
 
-   return TallVideo(
-  post: post,
-  onVisible: (String id, VideoPlayerController controller) {
-    // اگر لیست کنتر‌لرها وجود نداره، بسازش
-    videoControllers ??= {};
-
-    // همه ویدیوهای دیگه رو pause کن
-    videoControllers!.forEach((key, existingController) {
-      if (key != id && existingController.value.isPlaying) {
-        existingController.pause();
-      }
-    });
-
-    // فقط این یکی رو play کن
-    if (!controller.value.isPlaying) {
-      controller.play();
-    }
-
-    // ذخیره کن این کنتر‌لر رو در لیست
-    videoControllers![id] = controller;
-  },
-);
-
+  return TallVideo(post: post);
   }
 
   @override
