@@ -48,8 +48,8 @@ class _SearchScreenState extends State<SearchScreen> {
   ];
 
   final List<Map<String, dynamic>> arrangedPosts = [];
-  int _currentTallColumn = 0; // 0=left, 2=right
   bool _isLoading = true;
+  int _layoutPatternIndex = 0; // Tracks which layout pattern we're on (0: |:: or 1: ::| )
 
   @override
   void initState() {
@@ -64,68 +64,81 @@ class _SearchScreenState extends State<SearchScreen> {
 
       int videoIndex = 0;
       int imageIndex = 0;
-      int positionCounter = 0;
-
-      while (videoIndex < videos.length || imageIndex < images.length) {
-        if (videoIndex < videos.length && positionCounter % 5 == 0) {
-          // Add tall video
+      int itemCount = 0;
+      
+      // Process items in groups of 5 (1 tall + 4 squares)
+      while ((videoIndex < videos.length || imageIndex < images.length) && itemCount < 100) {
+        // Determine if we're in a |:: pattern (0) or a ::| pattern (1)
+        bool isTallVideoOnLeft = _layoutPatternIndex % 2 == 0;
+        
+        // We need at least one video for the tall slot
+        if (videoIndex >= videos.length) break;
+        
+        // Process a group of 5 items (1 tall video + 4 squares)
+        // First, add the tall video on the left or right based on pattern
+        if (isTallVideoOnLeft) {
+          // |:: pattern - Tall video on left
           arrangedPosts.add({
-            ...videos[videoIndex],
+            ...videos[videoIndex++],
             'isTall': true,
-            'column': _currentTallColumn,
+            'position': 'left',
           });
-          videoIndex++;
           
-          // Alternate columns
-          _currentTallColumn = _currentTallColumn == 0 ? 2 : 0;
-          
-          // Add 4 regular items
+          // Add 4 square items on the right
           for (int i = 0; i < 4; i++) {
             if (imageIndex < images.length) {
               arrangedPosts.add({
-                ...images[imageIndex],
+                ...images[imageIndex++],
                 'isTall': false,
-                'column': _getOppositeColumn(_currentTallColumn, i),
+                'position': 'right',
+                'squareIndex': i,
               });
-              imageIndex++;
             } else if (videoIndex < videos.length) {
               arrangedPosts.add({
-                ...videos[videoIndex],
+                ...videos[videoIndex++],
                 'isTall': false,
-                'column': _getOppositeColumn(_currentTallColumn, i),
+                'position': 'right',
+                'squareIndex': i,
               });
-              videoIndex++;
             }
           }
         } else {
-          // Add regular item
-          if (imageIndex < images.length) {
-            arrangedPosts.add({
-              ...images[imageIndex],
-              'isTall': false,
-              'column': -1, // Auto-position
-            });
-            imageIndex++;
-          } else if (videoIndex < videos.length) {
-            arrangedPosts.add({
-              ...videos[videoIndex],
-              'isTall': false,
-              'column': -1,
-            });
-            videoIndex++;
+          // ::| pattern - 4 square items on left
+          for (int i = 0; i < 4; i++) {
+            if (imageIndex < images.length) {
+              arrangedPosts.add({
+                ...images[imageIndex++],
+                'isTall': false,
+                'position': 'left',
+                'squareIndex': i,
+              });
+            } else if (videoIndex < videos.length) {
+              arrangedPosts.add({
+                ...videos[videoIndex++],
+                'isTall': false,
+                'position': 'left',
+                'squareIndex': i,
+              });
+            }
           }
+          
+          // Tall video on right
+          arrangedPosts.add({
+            ...videos[videoIndex++],
+            'isTall': true,
+            'position': 'right',
+          });
         }
-        positionCounter++;
+        
+        // Move to next pattern
+        _layoutPatternIndex++;
+        itemCount += 5;
       }
     } catch (e) {
       debugPrint('Layout preparation error: $e');
     } finally {
       setState(() => _isLoading = false);
     }
-  }
-
-  int _getOppositeColumn(int tallColumn, int index) {
-    return tallColumn == 0 ? [1, 2][index % 2] : [0, 1][index % 2];
   }
 
   Widget _buildMediaWidget(int index) {
@@ -228,31 +241,101 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildContentGrid() {
-    return  Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: StaggeredGrid.count(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 2,
-                    crossAxisSpacing: 2,
-                    children: [
-                      for (int i = 0; i < arrangedPosts.length; i++)
-                        StaggeredGridTile.count(
-                          crossAxisCellCount: 1,
-                          mainAxisCellCount: arrangedPosts[i]['isTall'] ? 2 : 1,
-                          child: Container(
-                            color: Colors.grey[300],
-                            child: _buildMediaWidget(i),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
+    return Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double screenWidth = constraints.maxWidth;
+          // Add extra padding to account for rounding errors
+          final double safeWidth = screenWidth - 4;
+          
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.all(1.0),
+              child: Column(
+                children: [
+                  for (int patternIndex = 0; patternIndex < _layoutPatternIndex; patternIndex++)
+                    Container(
+                      width: screenWidth,
+                      margin: const EdgeInsets.only(bottom: 2),
+                      child: Wrap(
+                        alignment: WrapAlignment.start,
+                        spacing: 2,
+                        runSpacing: 2,
+                        children: [
+                          if (patternIndex % 2 == 0) ...[
+                            // |:: pattern
+                            // Tall video on left (1/3 of screen width)
+                            Container(
+                              width: safeWidth / 3 - 4,
+                              height: (safeWidth / 3) * 2 - 4,
+                              margin: const EdgeInsets.all(1),
+                              child: _buildMediaWidget(patternIndex * 5),
+                            ),
+                            
+                            // Create a container for the 2x2 grid on the right
+                            Container(
+                              width: (safeWidth * 2 / 3) - 2,
+                              child: Wrap(
+                                spacing: 2,
+                                runSpacing: 2,
+                                children: [
+                                  _buildSquareItem(patternIndex * 5 + 1, safeWidth),
+                                  _buildSquareItem(patternIndex * 5 + 2, safeWidth),
+                                  _buildSquareItem(patternIndex * 5 + 3, safeWidth),
+                                  _buildSquareItem(patternIndex * 5 + 4, safeWidth),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
+                            // ::| pattern
+                            // Create a container for the 2x2 grid on the left
+                            Container(
+                              width: (safeWidth * 2 / 3) - 2,
+                              child: Wrap(
+                                spacing: 2,
+                                runSpacing: 2,
+                                children: [
+                                  _buildSquareItem(patternIndex * 5, safeWidth),
+                                  _buildSquareItem(patternIndex * 5 + 1, safeWidth),
+                                  _buildSquareItem(patternIndex * 5 + 2, safeWidth),
+                                  _buildSquareItem(patternIndex * 5 + 3, safeWidth),
+                                ],
+                              ),
+                            ),
+                            
+                            // Tall video on right
+                            Container(
+                              width: safeWidth / 3 - 4,
+                              height: (safeWidth / 3) * 2 - 4,
+                              margin: const EdgeInsets.all(1),
+                              child: _buildMediaWidget(patternIndex * 5 + 4),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
+          );
+        },
+      ),
     );
+  }
 
+  Widget _buildSquareItem(int index, double screenWidth) {
+    if (index >= arrangedPosts.length) {
+      return Container(); // Empty container if index out of bounds
+    }
+    
+    final itemSize = (screenWidth / 3) - 4;
+    
+    return Container(
+      width: itemSize,
+      height: itemSize,
+      margin: const EdgeInsets.all(1),
+      child: _buildMediaWidget(index),
+    );
   }
 }
