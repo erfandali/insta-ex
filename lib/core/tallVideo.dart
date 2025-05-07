@@ -27,18 +27,35 @@ class _TallVideoState extends State<TallVideo> {
   }
 
   void _initializeVideo() async {
-    controller = VideoPlayerController.networkUrl(
-      Uri.parse(widget.post['url']),
-      videoPlayerOptions: VideoPlayerOptions(
-        mixWithOthers: true,
-        allowBackgroundPlayback: false,
-      ),
-    );
-    await controller.initialize();
-    controller.setLooping(true);
-    controller.setVolume(0);
-    if (mounted) {
+    try {
+      controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.post['url']),
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true,
+          allowBackgroundPlayback: false,
+        ),
+      );
+      
+      // Add error handling and platform check
+      if (!mounted) return;
+      
+      await controller.initialize().catchError((error) {
+        print('Error initializing video: $error');
+        if (mounted) {
+          setState(() => showShimmer = false);
+        }
+      });
+      
+      if (!mounted) return;
+      
+      controller.setLooping(true);
+      controller.setVolume(0);
       setState(() => showShimmer = false);
+    } catch (e) {
+      print('Error in _initializeVideo: $e');
+      if (mounted) {
+        setState(() => showShimmer = false);
+      }
     }
   }
 
